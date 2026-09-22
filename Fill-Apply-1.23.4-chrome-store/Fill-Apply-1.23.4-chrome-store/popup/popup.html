@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Fill &amp; Apply — Auto Apply</title>
+    <link rel="icon" href="../brand/favicon.ico" />
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header class="brand-header">
+      <img class="brand-logo" src="../icons/icon48.png" width="36" height="36" alt="" />
+      <div class="brand-text">
+        <h1>Fill &amp; Apply</h1>
+        <p class="tagline">Auto Apply — end to end</p>
+      </div>
+      <span id="modeChip" class="mode-chip">Auto Apply E2E</span>
+    </header>
+
+    <p id="summary" class="summary">Loading…</p>
+
+    <section class="panel">
+      <p id="runState" class="run-state idle">Idle</p>
+      <p id="currentJob" class="current-job" hidden></p>
+
+      <div class="btn-row">
+        <button type="button" id="btnAutoStart" class="primary aa-start">▶ Start Auto Apply</button>
+        <button type="button" id="btnAutoStop" class="danger" disabled>■ Stop</button>
+      </div>
+
+      <div id="queueStatus" class="bucket-pills aa-counts" aria-live="polite">
+        <span class="pill pill-queued"><span class="pill-label">Queued</span> <strong id="countQueued">—</strong></span>
+        <span class="pill pill-applied"><span class="pill-label">Applied</span> <strong id="countApplied">—</strong></span>
+        <span class="pill pill-blocked"><span class="pill-label">Blocked</span> <strong id="countBlocked">—</strong></span>
+        <span class="pill pill-failed"><span class="pill-label">Error</span> <strong id="countError">—</strong></span>
+      </div>
+
+      <p id="lastError" class="err-line" hidden></p>
+
+      <div id="reviewWrap" class="review-wrap" hidden>
+        <strong class="review-title">Blocked — needs human review</strong>
+        <ul id="reviewList" class="review-list"></ul>
+      </div>
+
+      <div class="btn-row aa-links">
+        <button type="button" id="btnJobPool" class="secondary">JobPool</button>
+        <button type="button" id="btnSettings" class="secondary">Settings</button>
+      </div>
+
+      <p class="hint-mini aa-hint">
+        Start pulls Ready-to-apply jobs from JobPool, signs in / registers where stored credentials allow, fills,
+        navigates and submits each application, then marks it back on JobPool:
+        <strong>Applied</strong>, <strong>Blocked</strong> (needs you) or <strong>Error</strong>.
+      </p>
+    </section>
+
+    <p id="status" class="status" role="status"></p>
+
+    <script src="../lib/types.js"></script>
+    <script src="popup.js"></script>
+  </body>
+</html>

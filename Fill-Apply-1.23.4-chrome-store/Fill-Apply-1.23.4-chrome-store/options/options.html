@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Fill &amp; Apply — App Settings</title>
+    <link rel="icon" href="../brand/favicon.ico" />
+    <link rel="stylesheet" href="options.css" />
+  </head>
+  <body>
+    <header class="titlebar sticky-titlebar">
+      <img class="titlebar-logo" src="../icons/icon48.png" width="28" height="28" alt="" />
+      <div class="titlebar-main">
+        <strong class="titlebar-name">Fill &amp; Apply</strong>
+        <span class="titlebar-ver" id="extVersion">v1.19.1</span>
+      </div>
+      <span class="active-chip" id="headerActiveChip" title="Active profile">…</span>
+    </header>
+
+    <div class="wrap">
+      <details class="sec" id="sec-profiles" data-sec="profiles" open>
+        <summary>Profiles</summary>
+        <div class="sec-body">
+          <p class="hint">
+            Built-in profile: <strong>Mock</strong> (demo only). Click a chip to switch.
+            Use <strong>Import Profile</strong> for real applicant data (never shipped in the store build),
+            <strong>Export Profile</strong> to back up, and <strong>Delete</strong> for imported profiles.
+          </p>
+          <div id="profileChips" class="profile-chips" role="list"></div>
+          <div class="actions profile-actions">
+            <button type="button" id="btnProfileDelete" class="danger">Delete</button>
+            <button type="button" id="btnResetMockProfile" class="ghost">Reset Mock</button>
+            <button type="button" id="btnExportProfile" class="ghost">Export Profile</button>
+            <button type="button" id="btnImportProfile" class="ghost">Import Profile</button>
+            <input type="file" id="importProfileFile" accept="application/json,.json" hidden />
+            <span id="profileMgrStatus" class="status" role="status"></span>
+          </div>
+          <select id="profileSelect" hidden aria-hidden="true"></select>
+        </div>
+      </details>
+
+
+      <details class="sec" id="sec-source-profiles" hidden data-sec="sourceProfiles" open>
+        <summary>Source selection &amp; profiles</summary>
+        <div class="sec-body">
+          <p class="hint">
+            Select a job platform to require its <strong>compulsory</strong> fields before Start.
+            Choose <em>None</em> to disable the gate (generic fill still works).
+            Source answers merge <strong>over</strong> the active applicant profile at fill time.
+          </p>
+          <div class="grid">
+            <label class="span2">Selected source
+              <select id="selectedSourceId">
+                <option value="none">None (no gate)</option>
+              </select>
+            </label>
+            <p class="span2 hint" id="sourceCompletenessMeter">Completeness: —</p>
+          </div>
+          <p class="hint" id="sourceNote"></p>
+          <div id="sourceFieldsForm" class="source-fields-form"></div>
+          <div class="actions">
+            <button type="button" id="btnSaveSourceProfile" class="primary">Save source answers</button>
+            <button type="button" id="btnClearSourceProfile" class="ghost">Clear source answers</button>
+            <button type="button" id="btnCopySourceFromProfile" class="ghost">Copy from active profile</button>
+            <button type="button" id="btnSeedMockSources" class="ghost">Seed Mock source answers</button>
+            <span id="sourceProfileStatus" class="status" role="status"></span>
+          </div>
+        </div>
+      </details>
+
+      <details class="sec" id="sec-knowledge" data-sec="knowledge" open>
+        <summary>Adaptive knowledge / Field Memory <span class="section-sub" id="knowledgeCountHint"></span></summary>
+        <div class="sec-body">
+          <p class="hint">
+            <strong>Field Memory</strong> learns answers you type on unknown application questions
+            and reuses them on similar fields later.
+            Model: <strong>Key — Aliases — Type — Value</strong>.
+            One Key per meaning; Aliases are wording variants (never separate records).
+            Types: boolean · string · number · date · select · multiselect.
+            User-confirmed answers override built-in. Identity (name, email, phone) stays in
+            <strong>Profile settings</strong>. Conflicting answers need explicit Keep / Replace / Add alias — never silent overwrite.
+          </p>
+          <label class="check span2">
+            <input type="checkbox" id="knowledgeLearningEnabled" checked />
+            Learn from my answers on application forms
+          </label>
+          <h3 class="subhead" id="knowledgeConflictHeading">Pending conflicts</h3>
+          <p class="hint" id="knowledgeConflictHint" hidden></p>
+          <div id="knowledgeConflictList" class="knowledge-list knowledge-conflict-list"></div>
+          <p class="hint" id="knowledgeConflictEmpty">No pending conflicts.</p>
+          <div class="grid knowledge-toolbar">
+            <label class="span2">Search
+              <input type="search" id="knowledgeFilter" placeholder="Search question, key, or answer" />
+            </label>
+            <label>Type
+              <select id="knowledgeTypeFilter">
+                <option value="">All types</option>
+                <option value="boolean">boolean</option>
+                <option value="string">string</option>
+                <option value="number">number</option>
+                <option value="date">date</option>
+                <option value="select">select</option>
+                <option value="multiselect">multiselect</option>
+              </select>
+            </label>
+            <label>Sort
+              <select id="knowledgeSort">
+                <option value="updated">Recently updated</option>
+                <option value="key">Key A–Z</option>
+                <option value="usage">Most used</option>
+              </select>
+            </label>
+          </div>
+          <div id="knowledgeList" class="knowledge-list knowledge-list-compact"></div>
+          <p class="hint" id="knowledgeEmpty">No learned facts yet. Fill an unknown question on an application, then return here.</p>
+          <div class="actions">
+            <button type="button" id="btnKnowledgeRefresh" class="ghost">Refresh</button>
+            <button type="button" id="btnKnowledgeAdd" class="ghost">+ Add fact</button>
+            <button type="button" id="btnKnowledgeExport" class="ghost">Export knowledge</button>
+            <button type="button" id="btnKnowledgeImport" class="ghost">Import knowledge</button>
+            <input type="file" id="importKnowledgeFile" accept="application/json,.json" hidden />
+            <span id="knowledgeStatus" class="status" role="status"></span>
+            <p class="hint" id="knowledgeIoHint">Export downloads JSON (no passwords). Import offers merge or replace — empty / secret keys are skipped; values are never invented.</p>
+          </div>
+        </div>
+      </details>
+
+      <details class="sec" id="sec-question-bank" data-sec="questionBank">
+        <summary>Question Bank <span class="section-sub" id="questionBankCountHint"></span></summary>
+        <div class="sec-body">
+          <p class="hint">
+            Authored Q→A with aliases. Used after Adaptive confirmed answers and before generic fill.
+            Never overrides the current user answer or Profile.
+          </p>
+          <div class="grid">
+            <label class="span2">Search
+              <input type="search" id="qbFilter" placeholder="Search questions or answers" />
+            </label>
+          </div>
+          <div id="qbList" class="knowledge-list knowledge-list-compact"></div>
+          <p class="hint" id="qbEmpty">No question-bank entries yet.</p>
+          <div class="actions">
+            <button type="button" id="btnQbAdd" class="ghost">+ Add</button>
+            <button type="button" id="btnQbRefresh" class="ghost">Refresh</button>
+            <button type="button" id="btnQbExport" class="ghost">Export</button>
+            <button type="button" id="btnQbImport" class="ghost">Import</button>
+            <input type="file" id="importQbFile" accept="application/json,.json" hidden />
+            <span id="qbStatus" class="status" role="status"></span>
+          </div>
+        </div>
+      </details>
+
+      <details class="sec" id="sec-environment" data-sec="environment">
+        <summary>Environment</summary>
+        <div class="sec-body">
+          <p class="hint">
+            Registration password for Auto Register (Email / Confirm Email / Password / Confirm Password)
+            together with <strong>Profile.email</strong>. Stored only here — never in Adaptive Dictionary,
+            Question Bank, exports, logs, or fixtures.
+          </p>
+          <div class="grid">
+            <label class="span2">Registration password
+              <input type="password" id="envRegistrationPassword" autocomplete="new-password" placeholder="••••••••" />
+            </label>
+          </div>
+          <div class="actions">
+            <button type="button" id="btnEnvSave" class="primary">Save environment</button>
+            <button type="button" id="btnEnvClear" class="danger">Clear password</button>
+            <span id="envStatus" class="status" role="status"></span>
+          </div>
+        </div>
+      </details>
+
+      <details class="sec" id="sec-profile-settings" data-sec="profileSettings">
+        <summary>Profile settings / Identity <span class="section-sub" id="formActiveProfileHint"></span></summary>
+        <div class="sec-body">
+          <form id="profileForm">
+            <p class="hint" id="profileCompleteness">Completeness: —</p>
+
+            <h3 class="subhead">Identity</h3>
+            <div class="grid">
+              <label>Salutation <input name="salutation" placeholder="Mr." autocomplete="honorific-prefix" /></label>
+              <label>Preferred name <input name="preferredName" placeholder="What colleagues call you" autocomplete="nickname" /></label>
+              <label>First name <input name="firstName" autocomplete="given-name" /></label>
+              <label>Middle name <input name="middleName" autocomplete="additional-name" /></label>
+              <label>Last name <input name="lastName" autocomplete="family-name" /></label>
+              <label>Full name <input name="fullName" autocomplete="name" /></label>
+              <label class="span2">Headline <input name="headline" placeholder="Strategic Finance &amp; FP&amp;A Professional — CMA, ACCA" /></label>
+              <label>Email <input name="email" type="email" autocomplete="email" /></label>
+              <label>Phone <input name="phone" type="tel" autocomplete="tel" /></label>
+              <label>Phone country code <input name="phoneCountry" placeholder="+971" autocomplete="tel-country-code" /></label>
+              <label>Date of birth <input name="dateOfBirth" type="date" autocomplete="bday" /></label>
+              <label>Nationality <input name="nationality" placeholder="e.g. Pakistan" autocomplete="country-name" /></label>
+              <label>Gender <input name="gender" placeholder="Optional" autocomplete="sex" /></label>
+            </div>
+
+            <h3 class="subhead">Location</h3>
+            <div class="grid">
+              <label class="span2">Location (free text) <input name="location" /></label>
+              <label class="span2">Street address <input name="street" autocomplete="street-address" /></label>
+              <label>City <input name="city" autocomplete="address-level2" /></label>
+              <label>State / province <input name="state" autocomplete="address-level1" /></label>
+              <label>Country <input name="country" autocomplete="country-name" /></label>
+              <label>ZIP / Postal <input name="zip" autocomplete="postal-code" /></label>
+              <label>Postcode <input name="postcode" autocomplete="postal-code" placeholder="Same as ZIP if unused" /></label>
+            </div>
+
+            <h3 class="subhead">Work authorization</h3>
+            <div class="grid">
+              <label>Authorized to work (Yes/No)
+                <input name="authorizedToWork" placeholder="Yes" />
+              </label>
+              <label>Requires sponsorship (Yes/No)
+                <input name="requiresSponsorship" placeholder="No" />
+              </label>
+            </div>
+
+            <h3 class="subhead">Professional</h3>
+            <div class="grid">
+              <label class="span2">Current / most recent job title <input name="currentTitle" /></label>
+              <label class="span2">Current / most recent employer <input name="currentCompany" /></label>
+              <label>Years of experience <input name="yearsExperience" placeholder="15" /></label>
+              <label>Languages <input name="languages" placeholder="English" /></label>
+              <label class="span2">Skills <textarea name="skills" rows="2"></textarea></label>
+              <label class="span2">Certifications <textarea name="certifications" rows="2"></textarea></label>
+              <label class="span2">References <input name="references" placeholder="Available on request" /></label>
+            </div>
+
+            <h3 class="subhead">Education</h3>
+            <div class="grid">
+              <label>Highest education <input name="highestEducation" placeholder="Master's Degree" /></label>
+              <label>Degree <input name="degree" placeholder="MBA Executive" /></label>
+              <label class="span2">School / university <input name="school" /></label>
+              <label>Field of study <input name="fieldOfStudy" placeholder="Finance" /></label>
+              <label>Graduation year <input name="graduationYear" placeholder="2018" /></label>
+              <label>GPA / grade <input name="gpa" placeholder="3.75" /></label>
+            </div>
+            <p class="hint" id="educationEntriesHint"></p>
+
+            <h3 class="subhead">Availability, compensation &amp; preferences</h3>
+            <div class="grid">
+              <label class="span2">Notice period <input name="noticePeriod" placeholder="I can start immediately" /></label>
+              <label>Available from <input name="availableFrom" type="date" /></label>
+              <label>Willing to relocate <input name="willingToRelocate" placeholder="Yes" /></label>
+              <label>Remote preference <input name="remotePreference" placeholder="Onsite / Hybrid / Remote" /></label>
+              <label>Driver's license <input name="driversLicense" placeholder="Yes / No" /></label>
+              <label>Current salary <input name="currentSalary" /></label>
+              <label>Expected salary <input name="expectedSalary" /></label>
+              <label>Salary currency <input name="salaryCurrency" placeholder="SAR" /></label>
+              <label class="span2">How did you hear about us <input name="referralSource" placeholder="Job board" /></label>
+            </div>
+
+            <h3 class="subhead">Links</h3>
+            <div class="grid">
+              <label class="span2">LinkedIn <input name="linkedin" type="url" placeholder="https://linkedin.com/in/…" /></label>
+            </div>
+            <p class="hint">Social: LinkedIn only. Portfolio / Website / GitHub / Resume URL / Cover URL are not edited here.</p>
+            <div id="educationStructured" class="structured-list"></div>
+            <div id="certificationsStructured" class="structured-list"></div>
+
+            <h3 class="subhead">Summaries</h3>
+            <label>Resume / professional summary
+              <textarea name="resumeSummary" rows="3"></textarea>
+            </label>
+            <label>Work history summary
+              <textarea name="workHistory" rows="4"></textarea>
+            </label>
+            <p class="hint" id="experienceEntriesHint"></p>
+            <label>Education
+              <textarea name="education" rows="2"></textarea>
+            </label>
+            <label>Cover letter / default message
+              <textarea name="coverLetter" rows="4"></textarea>
+            </label>
+
+            <details class="nested" id="sec-custom-qa" data-sec="customQa">
+              <summary>Custom Q&amp;A</summary>
+              <div class="sec-body">
+                <p class="hint">Matched against question labels. Stored as <code>customAnswers</code>.</p>
+                <div id="qaList"></div>
+                <button type="button" id="btnAddQA" class="ghost">+ Add Q&amp;A</button>
+              </div>
+            </details>
+
+            <footer class="actions">
+              <button type="submit" class="primary">Save profile</button>
+              <button type="button" id="btnSeed" class="ghost">Load sample</button>
+              <button type="button" id="btnReset" class="danger">Clear all</button>
+              <span id="status" class="status" role="status"></span>
+            </footer>
+          </form>
+        </div>
+      </details>
+
+      <details class="sec" id="sec-backend" hidden data-sec="backend">
+        <summary>Backend / runner</summary>
+        <div class="sec-body">
+          <form id="configForm" onsubmit="return false;">
+            <div class="grid">
+              <label class="span2">Backend base URL
+                <input name="backendBaseUrl" id="backendBaseUrl" type="url" placeholder="https://zahid-jobpool.vercel.app" />
+              </label>
+              <p class="hint span2">JobPool live mode: uncheck Queue mode and set this URL. The extension GETs <code>/queue</code> and <code>/queue/next</code>, then POSTs <code>/applied/:id</code> with <code>status</code>. Only <code>status=submitted</code> means the employer received the application. Fill / Ready successes are <code>filled</code> / <code>ready</code>. Stop sends <code>POST /cancelled/:id</code>.</p>
+              <label class="check span2">
+                <input type="checkbox" id="mockMode" checked />
+                Queue mode (URLs below — no backend required)
+              </label>
+              <label>Default delay (sec)
+                <input type="number" id="delaySec" min="0" step="1" value="3" />
+              </label>
+              <label>Action delay min (ms)
+                <input type="number" id="actionDelayMinMs" min="0" step="50" value="400" />
+              </label>
+              <label>Action delay max (ms)
+                <input type="number" id="actionDelayMaxMs" min="0" step="50" value="900" />
+              </label>
+              <label>Default run mode
+                <select id="runMode">
+                  <option value="fill">Auto Fill — text/selects/files only</option>
+                  <option value="ready">Auto Ready — fill + Next/Continue</option>
+                  <option value="submit">Auto Submit — full end-to-end</option>
+                </select>
+              </label>
+              <label class="check span2">
+                <input type="checkbox" id="focusHud" checked />
+                <span>Focus HUD — outline + scroll current field (default on)</span>
+              </label>
+              <label class="check span2">
+                <input type="checkbox" id="autoCloseAppliedTab" checked />
+                <span>Auto-close old submitted tabs (keeps last N; Submit only)</span>
+              </label>
+              <label>Keep recent submitted tabs
+                <input type="number" id="keepRecentTabs" min="3" max="10" step="1" value="5" />
+              </label>
+              <label class="check span2">
+                <input type="checkbox" id="autoPdfReport" checked />
+                <span>Auto PDF report after successful Submit</span>
+              </label>
+            </div>
+            <details class="how">
+              <summary>How it works</summary>
+              <p class="hint">
+                <em>fill</em> never clicks Next/Submit; <em>ready</em> advances multi-step but never final Submit;
+                <em>submit</em> includes final Submit when confidently found. Auto-close only after submit success.
+                Queues: <code>queued</code> → <code>applied</code> / <code>failed</code> / <code>cancelled</code>.
+                Local <code>applied</code> means processed for the current mode — JobPool must read <code>status</code>, not the bucket name.
+              </p>
+            </details>
+            <div class="actions">
+              <button type="button" id="btnLastReport" class="ghost">Open last report meta</button>
+              <button type="button" id="btnSaveConfig" class="primary">Save runner config</button>
+              <span id="reportStatus" class="status" role="status"></span>
+              <span id="configStatus" class="status" role="status"></span>
+            </div>
+          </form>
+        </div>
+      </details>
+
+      <details class="sec" id="sec-caps" hidden data-sec="caps">
+        <summary>Per-source caps</summary>
+        <div class="sec-body">
+          <div class="grid">
+            <label>Ashby (1–3)
+              <input type="number" id="capAshby" min="1" max="3" step="1" value="2" />
+            </label>
+            <label>Indeed (1–3)
+              <input type="number" id="capIndeed" min="1" max="3" step="1" value="2" />
+            </label>
+            <label>Greenhouse (1–3)
+              <input type="number" id="capGreenhouse" min="1" max="3" step="1" value="2" />
+            </label>
+            <label>Lever (1–3)
+              <input type="number" id="capLever" min="1" max="3" step="1" value="2" />
+            </label>
+            <label>Default (other, 1–3)
+              <input type="number" id="capDefault" min="1" max="3" step="1" value="2" />
+            </label>
+          </div>
+          <details class="how">
+            <summary>How it works</summary>
+            <p class="hint">
+              Limit successful Submit applies per ATS/board in a rolling 60-day window. Hard max <strong>3</strong>.
+              Defaults <strong>2</strong>. See <a href="../docs/APPLICATION_GUIDE.md" target="_blank" rel="noopener">Application Guide</a>.
+            </p>
+          </details>
+        </div>
+      </details>
+
+      <details class="sec" id="sec-app-db" hidden data-sec="applicationDatabase">
+        <summary>Application database</summary>
+        <div class="sec-body">
+          <p class="hint">
+            Captured fields from submitted applications, grouped for review.
+            Sections are compact by default — expand Personal, Contact, Work Auth, Screening,
+            Preferences, Education, Experience, or Other as needed. Older records stay readable.
+          </p>
+          <div id="appDbList" class="app-db-list"></div>
+          <p class="hint" id="appDbEmpty">No application reports yet. Submit an application to capture fields here.</p>
+          <div class="actions">
+            <button type="button" id="btnAppDbRefresh" class="ghost">Refresh</button>
+            <span id="appDbStatus" class="status" role="status"></span>
+          </div>
+        </div>
+      </details>
+
+      <details class="sec" id="sec-queue" data-sec="applicationQueue" open>
+        <summary>Application queue</summary>
+        <div class="sec-body">
+          <p class="hint">
+            Paste target apply URLs (one per line). The runner opens them one-by-one, clicks the first Apply-start CTA,
+            fills, continues, and pauses when info is needed. Only <strong>http/https</strong> URLs are queued.
+          </p>
+          <label class="span2">Target apply URLs
+            <textarea id="mockQueueUrls" rows="6" placeholder="https://boards.greenhouse.io/acme/jobs/123&#10;https://jobs.ashbyhq.com/acme/…"></textarea>
+          </label>
+          <div class="actions">
+            <button type="button" id="btnSaveMockUrls" class="primary">Save &amp; rebuild queued</button>
+            <button type="button" id="btnResetMock" class="ghost">Clear queue &amp; URLs</button>
+            <button type="button" id="btnClearHistory" class="ghost">Clear history</button>
+            <span id="mockUrlsStatus" class="status" role="status"></span>
+          </div>
+          <p class="hint" id="mockUrlsMeta"></p>
+          <p class="hint" id="bucketCounts"></p>
+          <div class="realtime-log-wrap">
+            <div class="realtime-log-head">
+              <strong>Realtime log</strong>
+              <button type="button" id="btnClearSessionLog" class="ghost tiny">Clear log</button>
+            </div>
+            <div id="realtimeLog" class="realtime-log" aria-live="polite"></div>
+          </div>
+          <details class="how">
+            <summary>Advanced — Manual demo form</summary>
+            <p class="hint">
+              Open <code>demo/sample-application.html</code> via Live Server or <code>file://</code>, then use
+              <strong>Fill current page</strong> / Single runner mode. Demo never enters the Application queue.
+            </p>
+          </details>
+        </div>
+      </details>
+
+      <details class="sec" id="sec-documents" data-sec="documents">
+        <summary>Documents</summary>
+        <div class="sec-body">
+          <p class="hint">
+            Upload files (stored as base64 in <code>fillApply.documents</code>, shared across profiles).
+            Optional Drive/direct HTTPS links are best-effort: content scripts try fetch→blob when CORS allows;
+            Google Drive auth/CORS failures pause with <em>Open Drive link or upload file manually</em> — we never invent files.
+          </p>
+          <div class="grid">
+            <label>Resume file
+              <input type="file" id="resumeFile" accept=".pdf,.doc,.docx,application/pdf" />
+            </label>
+            <label>Cover letter file
+              <input type="file" id="coverFile" accept=".pdf,.doc,.docx,application/pdf,.txt" />
+            </label>
+            <label class="span2">Resume Drive/URL
+              <input type="url" id="resumeLink" placeholder="https://… (direct or Drive)" />
+            </label>
+            <label class="span2">Cover Drive/URL
+              <input type="url" id="coverLink" placeholder="https://… (direct or Drive)" />
+            </label>
+          </div>
+          <p id="docsMeta" class="hint"></p>
+          <div class="actions">
+            <button type="button" id="btnSaveDocs" class="primary">Save documents</button>
+            <button type="button" id="btnClearDocs" class="ghost">Clear documents</button>
+            <span id="docsStatus" class="status" role="status"></span>
+          </div>
+        </div>
+      </details>
+    </div>
+
+    <script src="../lib/types.js"></script>
+    <script src="../lib/profile.js"></script>
+    <script src="../lib/question-bank-store.js"></script>
+    <script src="../lib/profile-io.js"></script>
+    <script src="../lib/source-profiles.js"></script>
+    <script src="../lib/storage.js"></script>
+    <script src="../lib/knowledge-policy.js"></script>
+    <script src="../lib/knowledge-canonical.js"></script>
+    <script src="../lib/knowledge-store.js"></script>
+    <script src="../lib/knowledge-learn.js"></script>
+    <script src="../lib/environment-store.js"></script>
+    <script src="../lib/format.js"></script>
+    <script src="../lib/files.js"></script>
+    <script src="../lib/report.js"></script>
+    <script src="knowledge-ui.js"></script>
+    <script src="question-bank-ui.js"></script>
+    <script src="environment-ui.js"></script>
+    <script src="options.js"></script>
+  </body>
+</html>

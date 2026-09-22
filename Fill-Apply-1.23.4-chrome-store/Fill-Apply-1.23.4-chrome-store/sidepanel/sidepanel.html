@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Fill &amp; Apply</title>
+    <link rel="icon" href="../brand/favicon.ico" />
+    <link rel="stylesheet" href="sidepanel.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <header class="brand-header sticky-header thin-header">
+        <img class="brand-logo" src="../icons/icon48.png" width="28" height="28" alt="" />
+        <div class="brand-text">
+          <h1>Fill &amp; Apply</h1>
+          <p class="tagline" id="extVersionTag">v1.13.0</p>
+        </div>
+      </header>
+
+      <div class="scroll-body">
+        <section class="panel lean">
+          <label class="grow">Select profile
+            <select id="profileSelect" aria-label="Select profile"></select>
+          </label>
+          <p id="summary" class="summary compact">Loading…</p>
+
+          <fieldset class="mode-fieldset">
+            <legend>Application mode</legend>
+                        <div class="mode-seg" role="radiogroup" aria-label="Application mode">
+              <label class="mode-seg-item">
+                <input type="radio" name="runMode" value="register" />
+                <span class="mode-seg-label">
+                  <strong>Register</strong>
+                  <small>Sign up</small>
+                </span>
+              </label>
+              <label class="mode-seg-item">
+                <input type="radio" name="runMode" value="fill" checked />
+                <span class="mode-seg-label">
+                  <strong>Fill</strong>
+                  <small>Fields</small>
+                </span>
+              </label>
+              <label class="mode-seg-item">
+                <input type="radio" name="runMode" value="navigate" />
+                <span class="mode-seg-label">
+                  <strong>Navigate</strong>
+                  <small>Steps</small>
+                </span>
+              </label>
+              <label class="mode-seg-item">
+                <input type="radio" name="runMode" value="ready" />
+                <span class="mode-seg-label">
+                  <strong>Ready</strong>
+                  <small>+ Next</small>
+                </span>
+              </label>
+              <label class="mode-seg-item">
+                <input type="radio" name="runMode" value="submit" />
+                <span class="mode-seg-label">
+                  <strong>Submit</strong>
+                  <small>E2E</small>
+                </span>
+              </label>
+            </div>
+</fieldset>
+
+          <fieldset class="mode-fieldset">
+            <legend>Runner mode</legend>
+            <div class="mode-seg" role="radiogroup" aria-label="Runner mode">
+              <label class="mode-seg-item">
+                <input type="radio" name="runnerMode" value="single" checked />
+                <span class="mode-seg-label">
+                  <strong>Single</strong>
+                  <small>This page</small>
+                </span>
+              </label>
+              <label class="mode-seg-item">
+                <input type="radio" name="runnerMode" value="batch" />
+                <span class="mode-seg-label">
+                  <strong>Batch</strong>
+                  <small>Queue</small>
+                </span>
+              </label>
+            </div>
+          </fieldset>
+
+          <div id="sourceGateBanner" class="source-gate-banner" hidden>
+            <p id="sourceGateMessage" class="source-gate-message">Complete source profile in App Settings</p>
+            <button type="button" id="btnOpenSourceSettings" class="secondary">Complete source profile</button>
+          </div>
+
+          <div id="emptyQueuePrompt" class="empty-queue-prompt" hidden>
+            <p>No URLs in the queue — run Fill &amp; Apply on the current page?</p>
+            <div class="btn-row">
+              <button type="button" id="btnEmptyYes" class="primary">Yes</button>
+              <button type="button" id="btnEmptyNo" class="secondary">No — open App Settings</button>
+            </div>
+          </div>
+
+          <p id="batchOrderChip" class="batch-order-chip" hidden>Batch order: by source</p>
+
+          <div class="btn-row">
+            <button type="button" id="btnLoadJobPool" class="secondary">Load from JobPool</button>
+          </div>
+          <div class="btn-row">
+            <button type="button" id="btnStart" class="primary">Start runner</button>
+            <button type="button" id="btnStop" class="danger">Stop</button>
+          </div>
+
+          <p id="runState" class="run-state">Idle</p>
+          <div id="pauseBanner" class="pause-banner" hidden>
+            <p id="pauseMessage" class="pause-message">Paused — verify Cloudflare/CAPTCHA</p>
+            <button type="button" id="btnResume" class="primary resume-btn">Resume</button>
+          </div>
+
+          <div id="queueStatus" class="bucket-pills" aria-live="polite">
+            <span class="pill pill-queued"><span class="pill-label">Q</span> <strong id="countQueued">—</strong></span>
+            <span class="pill pill-applied"><span class="pill-label">A</span> <strong id="countApplied">—</strong></span>
+            <span class="pill pill-failed"><span class="pill-label">F</span> <strong id="countFailed">—</strong></span>
+            <span class="pill pill-cancelled"><span class="pill-label">C</span> <strong id="countCancelled">—</strong></span>
+          </div>
+          <p id="lastJobTitle" class="muted last-job" hidden></p>
+          <p id="lastError" class="err-line" hidden></p>
+
+          <div class="live-log-wrap">
+            <strong class="live-log-title">Live log</strong>
+            <div id="liveLog" class="live-log"></div>
+          </div>
+
+          <label class="row check compact-check">
+            <input type="checkbox" id="highlightUnmatched" />
+            Highlight unmatched
+          </label>
+
+          <div class="btn-row">
+            <button type="button" id="btnOpenJobPool" class="secondary">Open JobPool</button>
+            <button type="button" id="btnOptions" class="secondary">Open App Settings</button>
+          </div>
+          <p class="hint-mini">Load from JobPool pulls Ready-to-apply links. Delay, caps, documents live in App Settings.</p>
+        </section>
+
+
+      <!-- Complete Missing Information (adaptive KB + profile) -->
+      <div id="missingFieldsModal" class="mf-modal" hidden>
+        <div class="mf-card" role="dialog" aria-modal="true" aria-labelledby="mfTitle">
+          <h2 id="mfTitle">Complete Missing Information</h2>
+          <p id="missingFieldsProgress" class="mf-progress" aria-live="polite">0 of 0 answered</p>
+          <p id="missingFieldsMessage" class="mf-msg">Answer each item. Answers save as Key / Aliases / Type / Value and apply to this form immediately.</p>
+          <div id="missingFieldsList" class="mf-list mf-checklist"></div>
+          <div class="btn-row mf-actions">
+            <button type="button" id="btnSaveContinue" class="primary">Save &amp; continue fill</button>
+            <button type="button" id="btnMissingCancel" class="secondary">Cancel</button>
+          </div>
+          <p class="hint-mini">Persists to adaptive knowledge + active profile. Same Key is reused on future applications.</p>
+        </div>
+      </div>
+
+        <p id="status" class="status" role="status"></p>
+
+        <!-- Hidden compatibility hooks for panel-app (settings moved to App Settings) -->
+        <input type="hidden" id="delaySec" value="3" />
+        <input type="checkbox" id="autoCloseAppliedTab" checked hidden />
+        <input type="hidden" id="keepRecentTabs" value="5" />
+        <input type="checkbox" id="autoPdfReport" checked hidden />
+        <input type="hidden" id="capAshby" value="2" />
+        <input type="hidden" id="capIndeed" value="2" />
+        <input type="hidden" id="capGreenhouse" value="2" />
+        <input type="hidden" id="capLever" value="2" />
+        <input type="hidden" id="capDefault" value="2" />
+        <button type="button" id="btnFill" hidden>Fill</button>
+        <button type="button" id="btnSeed" hidden>Seed</button>
+        <button type="button" id="btnResetMock" hidden>Reset</button>
+        <button type="button" id="btnLastReport" hidden>Report</button>
+        <ul id="recentReports" hidden></ul>
+      </div>
+    </div>
+
+    <script src="../lib/types.js"></script>
+    <script src="../lib/profile.js"></script>
+    <script src="../lib/profile-io.js"></script>
+    <script src="../lib/source-profiles.js"></script>
+    <script src="../lib/storage.js"></script>
+    <script src="../lib/knowledge-canonical.js"></script>
+    <script src="../lib/knowledge-store.js"></script>
+    <script src="../lib/knowledge-learn.js"></script>
+    <script src="../lib/format.js"></script>
+    <script src="../lib/files.js"></script>
+    <script src="../ui/panel-app.js"></script>
+  </body>
+</html>
